@@ -1,11 +1,13 @@
-﻿namespace Rinsen.IoT.OneWire
+﻿using System.Threading.Tasks;
+
+namespace Rinsen.IoT.OneWire
 {
     public class DS18S20 : DS18B20
     {
         
-        public double GetExtendedTemperature()
+        public async Task<double?> GetExtendedTemperatureAsync()
         {
-            byte[] scratchpad = GetTemperatureScratchpad();
+            byte[] scratchpad = await GetTemperatureScratchpadAsync();
             var temp_read = GetTemp_Read(scratchpad[Scratchpad.TemperatureMSB], scratchpad[Scratchpad.TemperatureLSB]);
 
             return temp_read - 0.25 + ((scratchpad[Scratchpad.CountPerC] - scratchpad[Scratchpad.CountRemain]) / scratchpad[Scratchpad.CountPerC]);
@@ -19,7 +21,7 @@
             var decimalPart = rawTemperature.GetBit(0);
             var temperature = (int)rawTemperature;
             temperature &= ~(1 << 0);
-            temperature = temperature >> 1;
+            temperature >>= 1;
             if (decimalPart)
             {
                 temp_read = temperature + 0.5;
@@ -31,14 +33,14 @@
 
             if (negativeSign)
             {
-                temp_read = temp_read * -1;
+                temp_read *= -1;
             }
 
             return temp_read;
         }
 
 
-        class Scratchpad
+        static class Scratchpad
         {
             public const int TemperatureLSB = 0;
 
@@ -57,7 +59,6 @@
             public const int CountPerC = 7;
 
             public const int CRC = 8;
-
         }
     }
 }

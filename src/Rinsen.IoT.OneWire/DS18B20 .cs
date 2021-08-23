@@ -18,9 +18,14 @@ namespace Rinsen.IoT.OneWire
             OneWireAddress = oneWireAddress;
         }
 
-        public double GetTemperature()
+        public async Task<double?> GetTemperatureAsync()
         {
-            byte[] scratchpad = GetTemperatureScratchpad();
+            byte[] scratchpad = await GetTemperatureScratchpadAsync();
+
+            if (scratchpad == null)
+            {
+                return null;
+            }
 
             return GetTemp_Read(scratchpad[Scratchpad.TemperatureMSB], scratchpad[Scratchpad.TemperatureLSB]);
         }
@@ -89,16 +94,16 @@ namespace Rinsen.IoT.OneWire
 
             if (negative)
             {
-                temp_read = temp_read * -1;
+                temp_read *= -1;
             }
 
             return temp_read;
         }
 
-        protected byte[] GetTemperatureScratchpad()
+        protected async Task<byte[]> GetTemperatureScratchpadAsync()
         {
             ResetOneWireAndMatchDeviceRomAddress();
-            StartTemperatureConversion();
+            await StartTemperatureConversionAsync();
 
             ResetOneWireAndMatchDeviceRomAddress();
 
@@ -106,11 +111,11 @@ namespace Rinsen.IoT.OneWire
             return scratchpad;
         }
 
-        void StartTemperatureConversion()
+        Task StartTemperatureConversionAsync()
         {
             _oneWireMaster.WriteByte(FunctionCommand.CONVERT_T);
 
-            Task.Delay(TimeSpan.FromSeconds(1)).Wait();
+            return Task.Delay(TimeSpan.FromSeconds(1));
         }
 
         byte[] ReadScratchpad()
@@ -119,9 +124,20 @@ namespace Rinsen.IoT.OneWire
 
             var scratchpadData = new byte[9];
 
+            var validBytesFound = false;
+
             for (int i = 0; i < scratchpadData.Length; i++)
             {
                 scratchpadData[i] = _oneWireMaster.ReadByte();
+                if (scratchpadData[i] != 255)
+                {
+                    validBytesFound = true;
+                }
+            }
+
+            if (!validBytesFound)
+            {
+                return null;
             }
 
             return scratchpadData;

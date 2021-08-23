@@ -29,7 +29,7 @@ namespace Rinsen.IoT.OneWire
 
         public abstract void SetSelectedChannel(OneWireChannel channel);
 
-        public void AddDeviceType<T>(byte familyCode) where T : IOneWireDevice
+        public void AddDeviceType<T>(byte familyCode) where T : IOneWireDevice, new()
         {
             _oneWireDeviceTypes.Add(familyCode, typeof(T));
         }

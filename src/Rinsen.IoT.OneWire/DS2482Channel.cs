@@ -71,19 +71,17 @@ namespace Rinsen.IoT.OneWire
         private IOneWireDevice AddOneWireDevice(Dictionary<byte, Type> oneWireDeviceTypes, byte[] deviceAddress)
         {
             IOneWireDevice device;
-            if (oneWireDeviceTypes.Any(k => k.Key == deviceAddress[0]))
+            if (oneWireDeviceTypes.TryGetValue(deviceAddress[0], out var type))
             {
-                device = (IOneWireDevice)Activator.CreateInstance(oneWireDeviceTypes.First(k => k.Key == deviceAddress[0]).Value);
-                
+                device = (IOneWireDevice)Activator.CreateInstance(type);
             }
             else
             {
                 device = new UndefinedOneWireDevice();
             }
 
-            device.Initialize(this, new byte[deviceAddress.Length]);
+            device.Initialize(this, deviceAddress.Clone() as byte[]);
 
-            Array.Copy(deviceAddress, device.OneWireAddress, deviceAddress.Length);
             return device;
         }
 
