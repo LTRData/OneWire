@@ -20,7 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rinsen.IoT.OneWire", "src\Rinsen.IoT.OneWire\Rinsen.IoT.OneWire.csproj", "{54883C95-4448-4999-BCA4-4EFA010B63B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rinsen.IoT.OneWire.Tests", "tests\Rinsen.IoT.OneWire.Tests\Rinsen.IoT.OneWire.Tests.csproj", "{27BB28C7-5886-4F21-899F-44BE96527ADC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rinsen.IoT.OneWire.Tests", "tests\Rinsen.IoT.OneWire.Tests\Rinsen.IoT.OneWire.Tests.csproj", "{27BB28C7-5886-4F21-899F-44BE96527ADC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,6 +35,7 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|Any CPU.Build.0 = Debug|x86
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|ARM.ActiveCfg = Debug|ARM
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|ARM.Build.0 = Debug|ARM
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|ARM.Deploy.0 = Debug|ARM
@@ -44,7 +45,8 @@ Global
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|x86.ActiveCfg = Debug|x86
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|x86.Build.0 = Debug|x86
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Debug|x86.Deploy.0 = Debug|x86
-		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Release|Any CPU.ActiveCfg = Release|x86
+		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Release|Any CPU.ActiveCfg = Release|ARM
+		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Release|Any CPU.Build.0 = Release|ARM
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Release|ARM.ActiveCfg = Release|ARM
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Release|ARM.Build.0 = Release|ARM
 		{48B789B0-E612-4E01-9C4C-3E46F34D8F7D}.Release|ARM.Deploy.0 = Release|ARM

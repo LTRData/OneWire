@@ -29,29 +29,10 @@ namespace OneWire
             
             while (true)
             {
-                foreach (var device in ds2482_800.GetDevices<DS18S20>())
-                {
-                    var result = device.GetTemperatureAsync();
-                    var extendedResult = await device.GetExtendedTemperatureAsync();
-                    Debug.WriteLine($"DS2482-800, DS18S20 result {result}");
-                    Debug.WriteLine($"DS2482-800, DS18S20 extended result {extendedResult}");
-                    // Insert code to log result in some way
-                }
-
                 foreach (var device in ds2482_800.GetDevices<DS18B20>())
                 {
                     var result = await device.GetTemperatureAsync();
-                    Debug.WriteLine($"DS2482-800, DS18B20 result {result}");
-
-                    // Insert code to log result in some way
-                }
-
-                foreach (var device in ds2482_100.GetDevices<DS18S20>())
-                {
-                    var result = await device.GetTemperatureAsync();
-                    var extendedResult = await device.GetExtendedTemperatureAsync();
-                    Debug.WriteLine($"DS2482_100, DS18S20 result {result}");
-                    Debug.WriteLine($"DS2482-800, DS18S20 extended result {extendedResult}");
+                    Debug.WriteLine($"DS2482-800, DS18x20 result {result}");
 
                     // Insert code to log result in some way
                 }
@@ -59,7 +40,7 @@ namespace OneWire
                 foreach (var device in ds2482_100.GetDevices<DS18B20>())
                 {
                     var result = await device.GetTemperatureAsync();
-                    Debug.WriteLine($"DS2482-100, DS18B20 result {result}");
+                    Debug.WriteLine($"DS2482-100, DS18x20 result {result}");
 
                     // Insert code to log result in some way
                 }
