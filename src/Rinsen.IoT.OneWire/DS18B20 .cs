@@ -27,77 +27,19 @@ namespace Rinsen.IoT.OneWire
                 return null;
             }
 
-            return GetTemp_Read(scratchpad[Scratchpad.TemperatureMSB], scratchpad[Scratchpad.TemperatureLSB]);
+            return GetTemp_Read(scratchpad);
         }
         
-        internal virtual double GetTemp_Read(byte msb, byte lsb)
+        internal virtual double? GetTemp_Read(byte[] scratchpad)
         {
-            double temp_read = 0;
-            var negative = false;
-
-            if (msb > 0xF8)
+            if (scratchpad[Scratchpad.TemperatureLSB] == 0x50 && scratchpad[Scratchpad.TemperatureMSB] == 0x05)
             {
-                negative = true;
-                msb = (byte)~msb;
-                lsb = (byte)~lsb;
-                var addOne = (ushort)lsb;
-                addOne |= (ushort)(msb << 8);
-                addOne++;
-                lsb = (byte)(addOne & 0xFFu);
-                msb = (byte)((addOne >> 8) & 0xFFu);
-            }
-            
-            if (lsb.GetBit(0))
-            {
-                temp_read += 0.0625; // Math.Pow(2, -4);
-            }
-            if (lsb.GetBit(1))
-            {
-                temp_read += 0.125; // Math.Pow(2, -3);
-            }
-            if (lsb.GetBit(2))
-            {
-                temp_read += 0.25; // Math.Pow(2, -2);
-            }
-            if (lsb.GetBit(3))
-            {
-                temp_read += 0.5; // Math.Pow(2, -1);
-            }
-            if (lsb.GetBit(4))
-            {
-                temp_read += 1; // Math.Pow(2, 0);
-            }
-            if (lsb.GetBit(5))
-            {
-                temp_read += 2; // Math.Pow(2, 1);
-            }
-            if (lsb.GetBit(6))
-            {
-                temp_read += 4; // Math.Pow(2, 2);
-            }
-            if (lsb.GetBit(7))
-            {
-                temp_read += 8; // Math.Pow(2, 3);
-            }
-            if (msb.GetBit(0))
-            {
-                temp_read += 16; // Math.Pow(2, 4);
-            }
-            if (msb.GetBit(1))
-            {
-                temp_read += 32; //Math.Pow(2, 5);
-            }
-            if (msb.GetBit(2))
-            {
-                temp_read += 64; // Math.Pow(2, 6);
+                return null;
             }
 
-            if (negative)
-            {
-                temp_read *= -1;
-            }
+            var raw = unchecked((short)(scratchpad[Scratchpad.TemperatureLSB] | (scratchpad[Scratchpad.TemperatureMSB] << 8)));
 
-            return temp_read;
+            return raw / 16d;
         }
 
         protected async Task<byte[]> GetTemperatureScratchpadAsync()
