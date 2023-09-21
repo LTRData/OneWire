@@ -1,16 +1,9 @@
-﻿using System.Threading.Tasks;
-
-namespace Rinsen.IoT.OneWire
+﻿namespace Rinsen.IoT.OneWire
 {
-    public class DS18S20 : DS18B20
+    public class DS18S20 : DS18X20Base
     {
-        internal override double? GetTemp_Read(byte[] scratchpad)
+        protected override double GetTemp_Read(byte[] scratchpad)
         {
-            if (scratchpad[Scratchpad.TemperatureLSB] == 0x50 && scratchpad[Scratchpad.TemperatureMSB] == 0x05)
-            {
-                return null;
-            }
-
             var raw = unchecked((short)(scratchpad[Scratchpad.TemperatureLSB] | (scratchpad[Scratchpad.TemperatureMSB] << 8)));
 
             var ftemp = raw / 2d;
@@ -19,7 +12,6 @@ namespace Rinsen.IoT.OneWire
 
             return ftemp;
         }
-
 
         static class Scratchpad
         {
@@ -40,6 +32,7 @@ namespace Rinsen.IoT.OneWire
             public const int CountPerC = 7;
 
             public const int CRC = 8;
+
         }
     }
 }

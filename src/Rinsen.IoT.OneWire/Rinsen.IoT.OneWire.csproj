@@ -1,22 +1,35 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
 
-  
   <PropertyGroup>
-    <PackageId>Rinsen.OneWire</PackageId>
-    <Version>0.3.2</Version>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <Title>Rinsen One Wire</Title>
-    <Authors>Fredrik Rinsén</Authors>
-    <Description>.Net Standard 2.0 One Wire library for Windows Iot Core and Linux on Raspberry Pi via DS2482-100 and DS2482-800 I2C to One Wire bridge</Description>
-    <Copyright>© Fredrik Rinsén</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>Rinsen OneWire Raspberry IoT</PackageTags>
-    <RepositoryUrl>https://github.com/Rinsen/OneWire</RepositoryUrl>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0</TargetFrameworks>
+    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>One Wire library for Windows IoT via DS2482</Description>
+    <Company>Fredrik Rinsén, LTR Data</Company>
+    <Copyright>Copyright © 2019-2023</Copyright>
+    <Authors>Fredrik Rinsén, Olof Lagerkvist</Authors>
+    <Version>1.0.0.0</Version>
+    <PackageOutputPath>$(LocalNuGetPath)</PackageOutputPath>
+    <PackageProjectUrl>https://github.com/LTRData/OneWire</PackageProjectUrl>
+    <PackageId>LTRData.$(MSBuildProjectName)</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <RepositoryUrl>https://github.com/LTRData/OneWire</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Device.Gpio" Version="1.5.0" />
+    <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="System.Device.Gpio" Version="*" />
   </ItemGroup>
 
 </Project>

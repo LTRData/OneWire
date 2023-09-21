@@ -5,7 +5,7 @@ namespace Rinsen.IoT.OneWire.Tests
 {
     internal static class Ext
     {
-        public static double? GetTemp_Read(this DS18B20 dS18b20, byte msb, byte lsb) => dS18b20.GetTemp_Read(new[] { lsb, msb });
+        public static double? GetTemp_Read(this DS18B20 dS18b20, byte msb, byte lsb) => dS18b20.GetTemp_Read(lsb, msb);
     }
 
     public class DS18B20Tests
