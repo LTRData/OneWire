@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Rinsen.IoT.OneWire
+namespace Rinsen.IoT.OneWire;
+
+public interface IPressureSensor : ISensorId
 {
-    public interface IPressureSensor : ISensorId
-    {
-        Task<double?> GetPressureAsync();
-    }
+    Task<double?> GetPressureAsync();
 }

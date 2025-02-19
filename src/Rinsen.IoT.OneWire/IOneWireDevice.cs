@@ -1,11 +1,10 @@
-﻿namespace Rinsen.IoT.OneWire
+﻿namespace Rinsen.IoT.OneWire;
+
+public interface IOneWireDevice
 {
-    public interface IOneWireDevice
-    {
-        DS2482Channel DS2482Channel { get; }
+    DS2482Channel DS2482Channel { get; }
 
-        byte[] OneWireAddress { get; }
+    byte[] OneWireAddress { get; }
 
-        void Initialize(DS2482Channel ds2482, byte[] oneWireAddress);
-    }
+    void Initialize(DS2482Channel ds2482, byte[] oneWireAddress);
 }

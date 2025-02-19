@@ -2,16 +2,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net9.0</TargetFrameworks>
     <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+    <LangVersion>Latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>
     <Description>One Wire library for Windows IoT via DS2482</Description>
     <Company>Fredrik Rinsén, LTR Data</Company>
-    <Copyright>Copyright © 2019-2023</Copyright>
+    <Copyright>Copyright © 2019-2025</Copyright>
     <Authors>Fredrik Rinsén, Olof Lagerkvist</Authors>
-    <Version>1.0.0.0</Version>
+    <Version>1.0.1</Version>
     <PackageOutputPath>$(LocalNuGetPath)</PackageOutputPath>
     <PackageProjectUrl>https://github.com/LTRData/OneWire</PackageProjectUrl>
     <PackageId>LTRData.$(MSBuildProjectName)</PackageId>

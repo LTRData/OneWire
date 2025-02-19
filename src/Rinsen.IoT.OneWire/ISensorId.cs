@@ -1,7 +1,6 @@
-﻿namespace Rinsen.IoT.OneWire
+﻿namespace Rinsen.IoT.OneWire;
+
+public interface ISensorId
 {
-    public interface ISensorId
-    {
-        byte[] SensorId { get; }
-    }
+    byte[] SensorId { get; }
 }

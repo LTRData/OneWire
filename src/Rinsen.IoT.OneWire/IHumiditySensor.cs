@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Rinsen.IoT.OneWire
+namespace Rinsen.IoT.OneWire;
+
+public interface IHumiditySensor : ISensorId
 {
-    public interface IHumiditySensor : ISensorId
-    {
-        Task<double?> GetHumidityAsync();
-    }
+    Task<double?> GetHumidityAsync();
 }

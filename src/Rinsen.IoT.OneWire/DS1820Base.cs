@@ -1,106 +1,125 @@
 ﻿using System;
+using System.Buffers;
 using System.Threading.Tasks;
 
-namespace Rinsen.IoT.OneWire
+namespace Rinsen.IoT.OneWire;
+
+public abstract class DS18X20Base : IOneWireDevice, ITempSensor, ISensorId
 {
-    public abstract class DS18X20Base : IOneWireDevice, ITempSensor, ISensorId
+    public DS2482Channel DS2482Channel { get; private set; } = null!;
+
+    public byte[] OneWireAddress { get; private set; } = null!;
+
+    byte[] ISensorId.SensorId => OneWireAddress;
+
+    public void Initialize(DS2482Channel ds2482Channel, byte[] oneWireAddress)
     {
-        public DS2482Channel DS2482Channel { get; private set; }
+        DS2482Channel = ds2482Channel;
+        OneWireAddress = oneWireAddress;
+    }
 
-        public byte[] OneWireAddress { get; private set; }
+    public async Task<double?> GetTemperatureAsync()
+    {
+        var scratchpad = ArrayPool<byte>.Shared.Rent(9);
 
-        byte[] ISensorId.SensorId => OneWireAddress;
-
-        public void Initialize(DS2482Channel ds2482Channel, byte[] oneWireAddress)
+        try
         {
-            DS2482Channel = ds2482Channel;
-            OneWireAddress = oneWireAddress;
-        }
 
-        public async Task<double?> GetTemperatureAsync()
-        {
-            var scratchpad = await GetTemperatureScratchpadAsync();
+            var result = await GetTemperatureScratchpadAsync(scratchpad.AsMemory(0, 9)).ConfigureAwait(false);
 
-            if (scratchpad == null)
+            if (!result)
             {
                 return null;
             }
 
-            return GetTemp_Read(scratchpad);
+            return GetTemp_Read(scratchpad.AsSpan(0, 9));
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(scratchpad);
+        }
+    }
+
+    protected abstract double GetTemp_Read(ReadOnlySpan<byte> scratchpad);
+
+    protected async Task<bool> GetTemperatureScratchpadAsync(Memory<byte> scratchpad)
+    {
+        ResetOneWireAndMatchDeviceRomAddress();
+
+        DS2482Channel.EnableStrongPullup();
+
+        await StartTemperatureConversionAsync().ConfigureAwait(false);
+
+        ResetOneWireAndMatchDeviceRomAddress();
+
+        return ReadScratchpad(scratchpad.Span);
+    }
+
+    Task StartTemperatureConversionAsync()
+    {
+        DS2482Channel.OneWireWriteByte(FunctionCommand.CONVERT_T);
+
+        return Task.Delay(TimeSpan.FromSeconds(1));
+    }
+
+    bool ReadScratchpad(Span<byte> scratchpadData)
+    {
+        if (scratchpadData.Length != 9)
+        {
+            throw new ArgumentException("Buffer needs to be 9 bytes", nameof(scratchpadData));
         }
 
-        protected abstract double GetTemp_Read(byte[] scratchpad);
+        DS2482Channel.OneWireWriteByte(FunctionCommand.READ_SCRATCHPAD);
 
-        protected async Task<byte[]> GetTemperatureScratchpadAsync()
+        for (int i = 0; i < scratchpadData.Length; i++)
         {
-            ResetOneWireAndMatchDeviceRomAddress();
-
-            DS2482Channel.EnableStrongPullup();
-
-            await StartTemperatureConversionAsync();
-
-            ResetOneWireAndMatchDeviceRomAddress();
-
-            return ReadScratchpad();
+            scratchpadData[i] = DS2482Channel.OneWireReadByte();
         }
 
-        Task StartTemperatureConversionAsync()
+        // Connection failed
+#if NET8_0_OR_GREATER
+        return scratchpadData.ContainsAnyExcept((byte)255);
+#else
+        foreach (var b in scratchpadData)
         {
-            DS2482Channel.OneWireWriteByte(FunctionCommand.CONVERT_T);
-
-            return Task.Delay(TimeSpan.FromSeconds(1));
-        }
-
-        byte[] ReadScratchpad()
-        {
-            DS2482Channel.OneWireWriteByte(FunctionCommand.READ_SCRATCHPAD);
-
-            var scratchpadData = new byte[9];
-
-            for (int i = 0; i < scratchpadData.Length; i++)
+            if (b != 255)
             {
-                scratchpadData[i] = DS2482Channel.OneWireReadByte();
-            }
-
-            // Connection failed
-
-            if (Array.TrueForAll(scratchpadData, ((byte)255).Equals))
-            {
-                return null;
-            }
-
-            return scratchpadData;
-        }
-
-        void ResetOneWireAndMatchDeviceRomAddress()
-        {
-            DS2482Channel.OneWireReset();
-
-            DS2482Channel.OneWireWriteByte(RomCommand.MATCH);
-
-            foreach (var item in OneWireAddress)
-            {
-                DS2482Channel.OneWireWriteByte(item);
+                return true;
             }
         }
 
-        protected class RomCommand
-        {
-            public const byte SEARCH = 0xF0;
-            public const byte READ = 0x33;
-            public const byte MATCH = 0x55;
-            public const byte SKIP = 0xCC;
-            public const byte ALARM_SEARCH = 0xEC;
-        }
+        return false;
+#endif
+    }
 
-        protected class FunctionCommand
+    void ResetOneWireAndMatchDeviceRomAddress()
+    {
+        DS2482Channel.OneWireReset();
+
+        DS2482Channel.OneWireWriteByte(RomCommand.MATCH);
+
+        foreach (var item in OneWireAddress)
         {
-            public const byte CONVERT_T = 0x44;
-            public const byte WRITE_SCRATCHPAD = 0x4E;
-            public const byte READ_SCRATCHPAD = 0xBE;
-            public const byte COPY_SCRATCHPAD = 0x48;
-            public const byte RECALL_E = 0xB8;
-            public const byte READ_POWER_SUPPLY = 0xB4;
+            DS2482Channel.OneWireWriteByte(item);
         }
+    }
+
+    protected class RomCommand
+    {
+        public const byte SEARCH = 0xF0;
+        public const byte READ = 0x33;
+        public const byte MATCH = 0x55;
+        public const byte SKIP = 0xCC;
+        public const byte ALARM_SEARCH = 0xEC;
+    }
+
+    protected class FunctionCommand
+    {
+        public const byte CONVERT_T = 0x44;
+        public const byte WRITE_SCRATCHPAD = 0x4E;
+        public const byte READ_SCRATCHPAD = 0xBE;
+        public const byte COPY_SCRATCHPAD = 0x48;
+        public const byte RECALL_E = 0xB8;
+        public const byte READ_POWER_SUPPLY = 0xB4;
     }
 }
