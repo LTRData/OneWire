@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Rinsen.IoT.OneWire;
 
@@ -18,7 +17,6 @@ public class DS2482Channel(DS2482 ds2482, DS2482Channel.OneWireChannel channel)
     protected int _lastDiscrepancy;
     protected int _lastFamilyDiscrepancy;
     protected bool _lastDeviceFlag;
-    protected byte _crc8;
 
     public IEnumerable<IOneWireDevice> GetConnectedOneWireDevices(Dictionary<byte, Type> oneWireDeviceTypes)
     {
@@ -104,7 +102,7 @@ public class DS2482Channel(DS2482 ds2482, DS2482Channel.OneWireChannel channel)
         rom_byte_number = 0;
         rom_byte_mask = 1;
         search_result = false;
-        _crc8 = 0;
+        byte crc8 = 0;
 
         // if the last call was not the last one
         if (!_lastDeviceFlag)
@@ -191,7 +189,7 @@ public class DS2482Channel(DS2482 ds2482, DS2482Channel.OneWireChannel channel)
                     // if the mask is 0 then go to new SerialNum byte rom_byte_number and reset mask
                     if (rom_byte_mask == 0)
                     {
-                        Docrc8(ROM_NO[rom_byte_number]);  // accumulate the CRC
+                        Docrc8(ref crc8, ROM_NO[rom_byte_number]);  // accumulate the CRC
                         rom_byte_number++;
                         rom_byte_mask = 1;
                     }
@@ -200,7 +198,7 @@ public class DS2482Channel(DS2482 ds2482, DS2482Channel.OneWireChannel channel)
             while (rom_byte_number < 8);  // loop until through all ROM bytes 0-7
 
             // if the search was successful then
-            if (!((id_bit_number < 65) || (_crc8 != 0)))
+            if (!((id_bit_number < 65) || (crc8 != 0)))
             {
                 // search successful so set LastDiscrepancy,LastDeviceFlag,search_result
                 _lastDiscrepancy = last_zero;
@@ -575,7 +573,7 @@ public class DS2482Channel(DS2482 ds2482, DS2482Channel.OneWireChannel channel)
         ds2482.I2cDevice.Write([FunctionCommand.WRITE_CONFIGURATION, configuration]);
     }
 
-    private static readonly byte[] dscrc_table = [
+    private static readonly IReadOnlyList<byte> dscrc_table = [
     0, 94,188,226, 97, 63,221,131,194,156,126, 32,163,253, 31, 65,
   157,195, 33,127,252,162, 64, 30, 95,  1,227,189, 62, 96,130,220,
    35,125,159,193, 66, 28,254,160,225,191, 93,  3,128,222, 60, 98,
@@ -598,13 +596,12 @@ public class DS2482Channel(DS2482 ds2482, DS2482Channel.OneWireChannel channel)
     // global 'crc8' value. 
     // Returns current global crc8 value
     //
-    protected byte Docrc8(byte value)
+    protected internal static void Docrc8(ref byte crc8, byte value)
     {
         // See Application Note 27
 
         // TEST BUILD
-        _crc8 = dscrc_table[_crc8 ^ value];
-        return _crc8;
+        crc8 = dscrc_table[crc8 ^ value];
     }
 
     public static class FunctionCommand
