@@ -1,93 +1,89 @@
-One Wire in .NET C# for Raspberry Pi
-=========================
-via DS2482-100 or DS2482-800 for Windows IoT Core or Linux on Raspberry Pi
+# OneWire
 
-A new version built on top of System.Device.Gpio enabling this project to target .NET Standard 2.0
+1-Wire access through DS2482-100 and DS2482-800 I2C bridges, using `System.Device.Gpio`.
 
-This is made possible by the awesome work done by the ".NET Core IoT Libraries" project https://github.com/dotnet/iot/
+This is the LTRData fork of [Rinsen/OneWire](https://github.com/Rinsen/OneWire), originally developed by Fredrik Rinsén. The current library is packaged as [LTRData.Rinsen.IoT.OneWire](https://www.nuget.org/packages/LTRData.Rinsen.IoT.OneWire); its namespace remains `Rinsen.IoT.OneWire`.
 
-Introduction
-------------
+## Package and hardware
 
-A powerful library for a simple and easy to use API when communicating with One Wire devices via I2C on Raspberry Pi.
+```sh
+dotnet add package LTRData.Rinsen.IoT.OneWire
+```
 
-    using (var ds2482_800 = await _dS2482DeviceFactory.CreateDS2482_800(false, false, false))
-    using (var ds2482_100 = await _dS2482DeviceFactory.CreateDS2482_100(true, true))
-    {
-        while (true)
-        {
-            foreach (var device in ds2482_800.GetDevices<DS18S20>())
-            {
-                var result = device.GetTemperature();
-                var extendedResult = device.GetExtendedTemperature();
-                Debug.WriteLine($"DS2482-800, DS18S20 result {result}");
-                // Insert code to log result in some way
-            }
+The current project targets **.NET 8, 9 and 10**. Earlier versions and the retained Windows IoT Core samples used a different framework/API setup.
 
-            foreach (var device in ds2482_800.GetDevices<DS18B20>())
-            {
-                var result = device.GetTemperature();
-                Debug.WriteLine($"DS2482-800, DS18B20 result {result}");
+| Component | Support |
+| --- | --- |
+| DS2482-100 | One 1-Wire channel through an I2C bridge. |
+| DS2482-800 | Eight 1-Wire channels through an I2C bridge. |
+| DS18B20 | Temperature sensor, family code `0x28`. |
+| DS18S20 | Temperature sensor, family code `0x10`, including extended-resolution calculation. |
+| Other family codes | Discovered as `UndefinedOneWireDevice` unless a custom implementation is registered. |
 
-                // Insert code to log result in some way
-            }
+The library requires a working `System.Device.I2c.I2cDevice` provider, an accessible I2C bus and the bridge/sensors wired appropriately. On a Linux-based Raspberry Pi, enable I2C and give the application access to the relevant `/dev/i2c-*` device. See the [.NET IoT I2C setup guide](https://github.com/dotnet/iot/blob/main/Documentation/raspi-i2c.md).
 
-            foreach (var device in ds2482_100.GetDevices<DS18S20>())
-            {
-                var result = device.GetTemperature();
-                var extendedResult = device.GetExtendedTemperature();
-                Debug.WriteLine($"DS2482_100, DS18S20 result {result}");
+This accesses 1-Wire through the DS2482 bridge; it does not read Linux `w1` sysfs devices or drive a GPIO pin directly. Framework compatibility alone does not provide an I2C controller on a Windows PC or another host.
 
-                // Insert code to log result in some way
-            }
+## Read temperatures
 
-            foreach (var device in ds2482_100.GetDevices<DS18B20>())
-            {
-                var result = device.GetTemperature();
-                Debug.WriteLine($"DS2482-100, DS18B20 result {result}");
+With a DS2482-100 on bus 1 at address `0x18` (AD0 and AD1 low):
 
-                // Insert code to log result in some way
-            }
+```csharp
+using System;
+using Rinsen.IoT.OneWire;
 
-            await Task.Delay(5000);
-        }
-    }
+using var bridge = DS2482DeviceFactory.CreateDS2482_100(
+    busId: 1, address: 0x18);
 
-And thats all you need to get started with measuring temperatures with a DS18B20 from .NET and C# on Raspberry Pi.
+foreach (var sensor in bridge.GetDevices<DS18B20>())
+{
+    var temperature = await sensor.GetTemperatureAsync();
 
-Headed apps
------------
-Headed apps do not currently support disposing the DS2482 devices. The instance MUST be reused between measurements.
+    Console.WriteLine(temperature is double value
+        ? $"{Convert.ToHexString(sensor.OneWireAddress)}: {value:F2} °C"
+        : $"{Convert.ToHexString(sensor.OneWireAddress)}: no valid reading");
+}
+```
 
-I2C Address
------------
+Bridge creation is synchronous. Both sensor classes use `GetTemperatureAsync()`, returning a nullable Celsius value. A reading includes a one-second conversion wait; invalid scratchpad data or CRC returns `null`, while I2C failures can throw.
 
-Multiple DS2482-100 and DS2482-800 are supported at the same time on the same bus, the bus control flags are exposed via IDS2482DeviceFactory CreateDS2482_100(bool ad0, bool ad1) and CreateDS2482_800(bool ad0, bool ad1, bool ad2). 
-True/False is the same as high/low on the AD0, AD1 and AD2 pins on the devices.
+Use `CreateDS2482_800(...)` for an eight-channel bridge and `GetDevices<DS18S20>()` for DS18S20 sensors. `GetDevices<T>()` searches all bridge channels on first use and caches the discovered devices. `GetAllDevices()` also includes unrecognized devices.
 
-If the address is wrong or the device is connected in a bad way there will be a DS2482100DeviceNotFoundException thrown that will indicate that there is no connection to the DS2482 device but it does not know if it is related to addressing problems or physical connection problems, or i there is no device connected at all.
+Reuse the bridge for repeated measurements, and await each operation before starting the next one on that bridge. The conversion delay does not make simultaneous bus operations safe.
 
-Built in One Wire Device Support
----------------------------------
-## Today:
-1. DS18B20
-2. DS18S20
+## Addresses and ownership
 
-## Extend with your own device
+The Boolean factory overloads select **I2C bus 1** and derive the address from the AD pins:
 
-    oneWireDeviceHandler.AddDeviceType<MyDeviceType>(OneWireFamilyCode);
+- `CreateDS2482_100(ad0, ad1)`: `0x18 + AD0 + 2*AD1`.
+- `CreateDS2482_800(ad0, ad1, ad2)`: `0x18 + AD0 + 2*AD1 + 4*AD2`.
 
-Add the type and it´s one wire family code to the device handler, if there is no matching family code when new devices is discovered the will be created as a UnknownOneWireDevice.
+`true` means the pin is high. For another bus or an explicit address, use the `(int busId, int address)` overload. Multiple bridges can share a bus when configured with different addresses.
 
-The provided type also has to implement the IOneWireDevice interface.
+Factories that create their own `I2cDevice` transfer its lifetime to the returned bridge; disposing the bridge disposes that I2C device. The overload accepting an existing `I2cDevice` leaves its disposal to the caller.
 
-    public interface IOneWireDevice
-    {
-        DS2482Channel DS2482Channel { get; }
+Bridge initialization errors may be wrapped in `DS2482100DeviceNotFoundException` or `DS2482800DeviceNotFoundException`. Check the bus, address, permissions, wiring and inner exception; an error does not uniquely identify an addressing problem.
 
-        byte[] OneWireAddress { get; }
+## Adding device types
 
-        void Initialize(DS2482Channel ds2482, byte[] oneWireAddress);
-    }
+Before the first discovery, register a family code with `DS2482.AddDeviceType<MyDevice>(familyCode)`.
 
-For more information on how this works check the DS18B20 implementation.
+The type must implement [IOneWireDevice](https://github.com/LTRData/OneWire/blob/master/src/Rinsen.IoT.OneWire/IOneWireDevice.cs) and have a public parameterless constructor. Discovery creates the instance and calls `Initialize(DS2482Channel, byte[])` with its channel and ROM address. Registrations are shared across bridge instances, and duplicate family-code registrations are rejected.
+
+See [DS18B20](https://github.com/LTRData/OneWire/blob/master/src/Rinsen.IoT.OneWire/DS18B20.cs) and its [DS18X20Base implementation](https://github.com/LTRData/OneWire/blob/master/src/Rinsen.IoT.OneWire/DS1820Base.cs) for an example.
+
+## Building and historical projects
+
+Use the .NET 10 SDK to build the library directly:
+
+```sh
+dotnet build src/Rinsen.IoT.OneWire/Rinsen.IoT.OneWire.csproj -c Debug -f net10.0
+```
+
+Release builds also generate the NuGet package; `LocalNuGetPath` controls the package output directory.
+
+The [sample directories](https://github.com/LTRData/OneWire/tree/master/sample) retain older UWP/Windows IoT Core headed and background applications. They use earlier factory/API patterns and are historical references rather than current quick-start projects. The [test project](https://github.com/LTRData/OneWire/tree/master/tests/Rinsen.IoT.OneWire.Tests) still targets `net7.0-windows10.0.17763.0` and has not been aligned with the current library targets and conversion API. Consequently, building the library project directly avoids the outdated sample/test dependencies in the solution.
+
+## License and attribution
+
+The project retains Fredrik Rinsén's [MIT license](https://github.com/LTRData/OneWire/blob/master/LICENSE). I2C access is provided by the [.NET IoT libraries](https://github.com/dotnet/iot). The bridge/channel source also credits Maxim's sample implementation.
